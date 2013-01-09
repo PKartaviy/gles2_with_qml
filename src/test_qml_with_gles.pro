@@ -16,3 +16,4 @@ HEADERS  += painted_item.h
 
 OTHER_FILES += \
     ../qml/test.qml
+    ../qml/button.qml

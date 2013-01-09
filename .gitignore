@@ -1,0 +1,19 @@
+.# matlab binary
+*.asv
+build
+build_bin
+build_gcc
+download
+*.o
+*~
+CMakeLists.txt.user
+head_tracker/tests/test_alghorithms/logs_config.h
+.metadata
+.project
+.cproject
+.settings
+Debug/
+Release/
+*.pyc
+build_rpi
+*.pro.user

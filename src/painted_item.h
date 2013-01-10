@@ -37,6 +37,8 @@ public:
 private:
     int m_prog;
     QGLShaderProgram program;
+
+    GLuint vPositionLoc;
 };
 
 #endif /* __PAINTED_ITEM_H_ */

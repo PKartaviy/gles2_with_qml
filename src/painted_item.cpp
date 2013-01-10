@@ -26,9 +26,11 @@ void PaintedOpenGL::paint(QPainter *painter)
         const char *vscr =
                 "attribute vec4 vPosition;                 \n"
                 "uniform mat4 matrix;                      \n"
+                "varying vec4 lPosition;                   \n"
                 "void main()                               \n"
                 "{                                         \n"
                 "  gl_Position = matrix * vPosition;       \n"
+                "  lPosition = vPosition;                  \n"
                 "}                                         \n";
         result = vshader->compileSourceCode(vscr);
         assert(result);
@@ -36,9 +38,12 @@ void PaintedOpenGL::paint(QPainter *painter)
         QGLShader *fshader = new QGLShader(QGLShader::Fragment, this);
         const char *fscr =
                 "precision mediump float;                     \n"
+                "uniform mat4 colorMatrix;                    \n"
+                "varying vec4 lPosition;                      \n"
                 "void main()                                  \n"
                 "{                                            \n"
-                "  gl_FragColor = vec4 ( 0.0, 1.0, 0.0, 1.0 );\n"
+                "  gl_FragColor = colorMatrix*lPosition;      \n"
+                "  gl_FragColor[3] = 1.0;                     \n"
                 "}";
         result = fshader->compileSourceCode(fscr);
         assert(result);
@@ -47,34 +52,64 @@ void PaintedOpenGL::paint(QPainter *painter)
         program.addShader(fshader);
         program.link();
         m_prog = program.programId();
-        glBindAttribLocation ( m_prog, 0, "vPosition" );
+
+        vPositionLoc = glGetAttribLocation(m_prog, "vPosition");
     }
     glUseProgram ( m_prog );
 
-    glEnableVertexAttribArray(0);
-
-    GLfloat tab_matrix[] = { 1.0 , 0.0 , 0.0 , 0.0 ,
-                             0.0 , 1.0 , 0.0 , 0.0 ,
-                             0.0 , 0.0 , 1.0 , 0.0 ,
+    GLfloat tab_matrix[] = { 0.7 , 0.0 , -0.7 , 0.0 ,
+                             0.4 , 0.8 , 0.4 , 0.0 ,
+                             0.57 , -0.57 , 0.57 , 0.0 ,
                              0.0 , 0.0 , 0.0 , 1.0
                            };
 
 
+    GLfloat colorMatrix[] = { 1.0, 0, 0, 0,
+                              0,   1.0, 0, 0,
+                              0,  0,   1.0,  0,
+                              0,  0,   0,   1.0};
+
     glUniformMatrix4fv(glGetUniformLocation(m_prog, "matrix"), 1, GL_FALSE, tab_matrix);
-    GLfloat vVertices[] = {  0.0f,  1.0f, 0.0f,
-                             0.5f,  0.5f, 0.0f,
-                             0.5f, -1.5f, 0.0f };
+    glUniformMatrix4fv(glGetUniformLocation(m_prog, "colorMatrix"), 1, GL_FALSE, colorMatrix);
+
+    // Draw verticies
+    GLfloat vVertices[] = {  // first triangle
+                             0.0f,  0.0f, 0.0f,
+                             1.0f,  0.0f, 0.0f,
+                             0.0f,  1.0f, 0.0f,
+                             // second triangle
+                             0.0f,  0.0f, 0.0f,
+                             1.0f,  0.0f, 0.0f,
+                             0.0f,  0.0f, 1.0f,
+                             //third triangle
+                             0.0f,  0.0f, 0.0f,
+                             0.0f,  1.0f, 0.0f,
+                             0.0f,  0.0f, 1.0f,
+                             //forth triangle
+                             1.0f,  0.0f, 0.0f,
+                             0.0f,  1.0f, 0.0f,
+                             0.0f,  0.0f, 1.0f
+                          };
 
 
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glVertexAttribPointer ( 0, 3, GL_FLOAT, GL_FALSE, 0, vVertices );
-    glEnableVertexAttribArray ( 0 );
+    glBindBuffer(GL_ARRAY_BUFFER, vPositionLoc);
+    glEnableVertexAttribArray ( vPositionLoc );
+    glVertexAttribPointer ( vPositionLoc, 3, GL_FLOAT, GL_FALSE, 0, vVertices );
 
-    glDrawArrays ( GL_TRIANGLES, 0, 3 );
+    glDrawArrays ( GL_TRIANGLES, 0, 12 );
 
-    glDisableVertexAttribArray(0);
+    GLfloat zeroMatrix[] = { 0.0, 0, 0, 0,
+                              0,   0.0, 0, 0,
+                              0,  0,   0.0,  0,
+                              0,  0,   0,   0.0};
+    glUniformMatrix4fv(glGetUniformLocation(m_prog, "colorMatrix"), 1, GL_FALSE, zeroMatrix);
+    glDrawArrays(GL_LINES, 0, 12);
+
+    glDisableVertexAttribArray(vPositionLoc);
+
     glUseProgram(0);
 
     painter->endNativePainting();

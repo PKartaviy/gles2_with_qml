@@ -72,45 +72,51 @@ void PaintedOpenGL::paint(QPainter *painter)
     glUniformMatrix4fv(glGetUniformLocation(m_prog, "matrix"), 1, GL_FALSE, tab_matrix);
     glUniformMatrix4fv(glGetUniformLocation(m_prog, "colorMatrix"), 1, GL_FALSE, colorMatrix);
 
-    // Draw verticies
-    GLfloat vVertices[] = {  // first triangle
-                             0.0f,  0.0f, 0.0f,
+    //Load vertices to GPU memory
+    int verticesNum = 4;
+    GLfloat vVertices[] = {
                              1.0f,  0.0f, 0.0f,
-                             0.0f,  1.0f, 0.0f,
-                             // second triangle
-                             0.0f,  0.0f, 0.0f,
-                             1.0f,  0.0f, 0.0f,
-                             0.0f,  0.0f, 1.0f,
-                             //third triangle
-                             0.0f,  0.0f, 0.0f,
                              0.0f,  1.0f, 0.0f,
                              0.0f,  0.0f, 1.0f,
-                             //forth triangle
-                             1.0f,  0.0f, 0.0f,
-                             0.0f,  1.0f, 0.0f,
-                             0.0f,  0.0f, 1.0f
+                             0.0f,  0.0f, 0.0f
                           };
+    int indecesNum = 12;
+    GLushort indeces[] = { 0, 1, 2,
+                           1, 2, 3,
+                           0, 1, 3,
+                           0, 2, 3};
 
+    GLuint buffersId[2];
+    glGenBuffers(2, buffersId);
 
+    glBindBuffer(GL_ARRAY_BUFFER, buffersId[0]);
+    glBufferData(GL_ARRAY_BUFFER, verticesNum*3*sizeof(GLfloat), vVertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffersId[1]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indecesNum*sizeof(GLushort), indeces, GL_STATIC_DRAW);
+
+    // Draw verticies
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vPositionLoc);
     glEnableVertexAttribArray ( vPositionLoc );
-    glVertexAttribPointer ( vPositionLoc, 3, GL_FLOAT, GL_FALSE, 0, vVertices );
 
-    glDrawArrays ( GL_TRIANGLES, 0, 12 );
+    GLuint offset = 0;
+    glVertexAttribPointer ( vPositionLoc, 3, GL_FLOAT, GL_FALSE, 0, (const void*) offset );
+    glBindAttribLocation(m_prog, vPositionLoc, "vPosition");
+    glDrawElements(GL_TRIANGLES, indecesNum, GL_UNSIGNED_SHORT, (const void*)0);
 
     GLfloat zeroMatrix[] = { 0.0, 0, 0, 0,
-                              0,   0.0, 0, 0,
-                              0,  0,   0.0,  0,
-                              0,  0,   0,   0.0};
+                             0,   0.0, 0, 0,
+                             0,  0,   0.0,  0,
+                             0,  0,   0,   0.0};
     glUniformMatrix4fv(glGetUniformLocation(m_prog, "colorMatrix"), 1, GL_FALSE, zeroMatrix);
-    glDrawArrays(GL_LINES, 0, 12);
+    glDrawElements(GL_LINES, indecesNum, GL_UNSIGNED_SHORT, (const void*) 0);
 
     glDisableVertexAttribArray(vPositionLoc);
 
     glUseProgram(0);
 
+    glDeleteBuffers(2, buffersId);
     painter->endNativePainting();
 }
